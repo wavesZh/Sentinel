@@ -22,15 +22,15 @@ package com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker;
 public enum CircuitBreakerStrategy {
 
     /**
-     * Circuit breaker opens when slow request ratio exceeds the threshold.
+     * Circuit breaker opens (cuts off) when slow request ratio exceeds the threshold.
      */
     SLOW_REQUEST_RATIO(0),
     /**
-     * Circuit breaker opens when error ratio exceeds the threshold.
+     * Circuit breaker opens (cuts off) when error ratio exceeds the threshold.
      */
     ERROR_RATIO(1),
     /**
-     * Circuit breaker opens when error count exceeds the threshold.
+     * Circuit breaker opens (cuts off) when error count exceeds the threshold.
      */
     ERROR_COUNT(2);
 

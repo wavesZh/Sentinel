@@ -15,10 +15,12 @@
  */
 package com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker;
 
+import com.alibaba.csp.sentinel.context.Context;
+import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
 
 /**
- * Basic circuit breaker interface.
+ * <p>Basic <a href="https://martinfowler.com/bliki/CircuitBreaker.html">circuit breaker</a> interface.</p>
  *
  * @author Eric Zhao
  */
@@ -32,11 +34,12 @@ public interface CircuitBreaker {
     DegradeRule getRule();
 
     /**
-     * Acquires permission of an invocation only if it is available at the time of invocation.
+     * Acquires permission of an invocation only if it is available at the time of invoking.
      *
+     * @param context context of current invocation
      * @return {@code true} if permission was acquired and {@code false} otherwise
      */
-    boolean tryPass();
+    boolean tryPass(Context context);
 
     /**
      * Get current state of the circuit breaker.
@@ -46,22 +49,28 @@ public interface CircuitBreaker {
     State currentState();
 
     /**
-     * Record a completed request with the given response time and error (if present) and
-     * handle state transformation of the circuit breaker.
+     * <p>Record a completed request with the context and handle state transformation of the circuit breaker.</p>
+     * <p>Called when a <strong>passed</strong> invocation finished.</p>
      *
-     * @param rt the response time of this entry
-     * @param error the error of this entry (if present)
+     * @param context context of current invocation
      */
-    void onRequestComplete(long rt, Throwable error);
+    void onRequestComplete(Context context);
 
     /**
      * Circuit breaker state.
      */
     enum State {
         /**
-         * In {@code OPEN} state, all requests will be rejected until the next retry time point.
+         * In {@code OPEN} state, all requests will be rejected until the next recovery time point.
          */
         OPEN,
+        /**
+         * In {@code HALF_OPEN} state, the circuit breaker will allow a "probe" invocation.
+         * If the invocation is abnormal according to the strategy (e.g. it's slow), the circuit breaker
+         * will re-transform to the {@code OPEN} state and wait for the next recovery time point;
+         * otherwise the resource will be regarded as "recovered" and the circuit breaker
+         * will cease cutting off requests and transform to {@code CLOSED} state.
+         */
         HALF_OPEN,
         /**
          * In {@code CLOSED} state, all requests are permitted. When current metric value exceeds the threshold,

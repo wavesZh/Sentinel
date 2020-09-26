@@ -22,7 +22,6 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRuleManager;
 import com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker.CircuitBreaker.State;
-import com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker.CircuitBreakerStateChangeObserver;
 import com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker.CircuitBreakerStrategy;
 import com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker.EventObserverRegistry;
 import com.alibaba.csp.sentinel.util.TimeUtil;
@@ -91,22 +90,13 @@ public class ExceptionRatioCircuitBreakerDemo {
 
     private static void registerStateChangeObserver() {
         EventObserverRegistry.getInstance().addStateChangeObserver("logging",
-            new CircuitBreakerStateChangeObserver() {
-                @Override
-                public void onTransformToClosed(State prev, DegradeRule rule) {
-                    System.out.println(String.format("%s -> CLOSED at %d", prev.name(), TimeUtil.currentTimeMillis()));
-                }
-
-                @Override
-                public void onTransformToOpen(State prev, DegradeRule rule, double snapshotValue) {
-                    System.err.println(String.format("%s -> OPEN at %d, snapshotValue=%.2f", prev.name(),
+            (prevState, newState, rule, snapshotValue) -> {
+                if (newState == State.OPEN) {
+                    System.err.println(String.format("%s -> OPEN at %d, snapshotValue=%.2f", prevState.name(),
                         TimeUtil.currentTimeMillis(), snapshotValue));
-                }
-
-                @Override
-                public void onTransformToHalfOpen(State prev, DegradeRule rule) {
-                    System.out.println(
-                        String.format("%s -> HALF_OPEN at %d", prev.name(), TimeUtil.currentTimeMillis()));
+                } else {
+                    System.err.println(String.format("%s -> %s at %d", prevState.name(), newState.name(),
+                        TimeUtil.currentTimeMillis()));
                 }
             });
     }

@@ -81,16 +81,16 @@ public final class DegradeRuleManager {
     }
 
     /**
-     * Get a copy of the rules.
+     * <p>Get existing circuit breaking rules.</p>
+     * <p>Note: DO NOT modify the rules from the returned list directly.
+     * The behavior is <strong>undefined</strong>.</p>
      *
-     * @return a new copy of the rules.
+     * @return list of existing circuit breaking rules, or empty list if no rules were loaded
      */
     public static List<DegradeRule> getRules() {
         List<DegradeRule> rules = new ArrayList<>();
-        for (Map.Entry<String, List<CircuitBreaker>> entry : circuitBreakers.entrySet()) {
-            for (CircuitBreaker cb : entry.getValue()) {
-                rules.add(cb.getRule());
-            }
+        for (Map.Entry<String, Set<DegradeRule>> entry : ruleMap.entrySet()) {
+            rules.addAll(entry.getValue());
         }
         return rules;
     }
@@ -208,9 +208,8 @@ public final class DegradeRuleManager {
             Map<String, Set<DegradeRule>> rm = new HashMap<>(cbs.size());
 
             for (Map.Entry<String, List<CircuitBreaker>> e : cbs.entrySet()) {
-                if (e.getValue() == null || e.getValue().isEmpty()) {
-                    continue;
-                }
+                assert e.getValue() != null && !e.getValue().isEmpty();
+
                 Set<DegradeRule> rules = new HashSet<>(e.getValue().size());
                 for (CircuitBreaker cb : e.getValue()) {
                     rules.add(cb.getRule());
@@ -225,13 +224,13 @@ public final class DegradeRuleManager {
         @Override
         public void configUpdate(List<DegradeRule> conf) {
             reloadFrom(conf);
-            RecordLog.info("[DegradeRuleManager] Degrade rules has been updated to: " + ruleMap);
+            RecordLog.info("[DegradeRuleManager] Degrade rules has been updated to: {}", ruleMap);
         }
 
         @Override
         public void configLoad(List<DegradeRule> conf) {
             reloadFrom(conf);
-            RecordLog.info("[DegradeRuleManager] Degrade rules loaded: " + ruleMap);
+            RecordLog.info("[DegradeRuleManager] Degrade rules loaded: {}", ruleMap);
         }
 
         private Map<String, List<CircuitBreaker>> buildCircuitBreakers(List<DegradeRule> list) {
@@ -241,7 +240,7 @@ public final class DegradeRuleManager {
             }
             for (DegradeRule rule : list) {
                 if (!isValidRule(rule)) {
-                    RecordLog.warn("[DegradeRuleManager] Ignoring invalid rule when loading new rules: " + rule);
+                    RecordLog.warn("[DegradeRuleManager] Ignoring invalid rule when loading new rules: {}", rule);
                     continue;
                 }
 
@@ -250,7 +249,7 @@ public final class DegradeRuleManager {
                 }
                 CircuitBreaker cb = getExistingSameCbOrNew(rule);
                 if (cb == null) {
-                    RecordLog.warn("[DegradeRuleManager] Unknown circuit breaking strategy, ignoring: " + rule);
+                    RecordLog.warn("[DegradeRuleManager] Unknown circuit breaking strategy, ignoring: {}", rule);
                     continue;
                 }
 

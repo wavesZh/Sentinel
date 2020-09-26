@@ -24,27 +24,19 @@ import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
 public interface CircuitBreakerStateChangeObserver {
 
     /**
-     * Observer method triggered when circuit breaker state transformed to {@code CLOSED}.
+     * <p>Observer method triggered when circuit breaker state changed. The transformation could be:</p>
+     * <ul>
+     * <li>From {@code CLOSED} to {@code OPEN} (with the triggered metric)</li>
+     * <li>From {@code OPEN} to {@code HALF_OPEN}</li>
+     * <li>From {@code OPEN} to {@code CLOSED}</li>
+     * <li>From {@code HALF_OPEN} to {@code OPEN} (with the triggered metric)</li>
+     * </ul>
      *
-     * @param prev previous state of the circuit breaker
-     * @param rule associated rule
-     */
-    void onTransformToClosed(CircuitBreaker.State prev, DegradeRule rule);
-
-    /**
-     * Observer method triggered when circuit breaker state transformed to {@code OPEN}.
-     *
-     * @param prev          previous state of the circuit breaker
+     * @param prevState     previous state of the circuit breaker
+     * @param newState      new state of the circuit breaker
      * @param rule          associated rule
-     * @param snapshotValue triggered value on circuit breaker opens
+     * @param snapshotValue triggered value on circuit breaker opens (null if the new state is CLOSED or HALF_OPEN)
      */
-    void onTransformToOpen(CircuitBreaker.State prev, DegradeRule rule, double snapshotValue);
-
-    /**
-     * Observer method triggered when circuit breaker state transformed to {@code HALF_OPEN}.
-     *
-     * @param prev previous state of the circuit breaker
-     * @param rule associated rule
-     */
-    void onTransformToHalfOpen(CircuitBreaker.State prev, DegradeRule rule);
+    void onStateChange(CircuitBreaker.State prevState, CircuitBreaker.State newState, DegradeRule rule,
+                       Double snapshotValue);
 }
